@@ -10,6 +10,10 @@
 # See /LICENSE for more information.
 #
 
+# 修复 libxcrypt 编译报错
+# 给 configure 脚本添加 --disable-werror 参数，忽略警告
+sed -i 's/CONFIGURE_ARGS +=/CONFIGURE_ARGS += --disable-werror/' feeds/packages/libs/libxcrypt/Makefile
+
 # 自定义默认网关，后方的192.168.30.1即是可自定义的部分
 sed -i 's/192.168.[0-9]*.[0-9]*/192.168.30.1/g' package/base-files/files/bin/config_generate
 
