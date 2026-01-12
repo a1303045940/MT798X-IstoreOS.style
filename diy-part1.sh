@@ -21,6 +21,8 @@ echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall.git' >>feed
 echo 'src-git passwall2 https://github.com/xiaorouji/openwrt-passwall2.git' >>feeds.conf.default
 # echo 'src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git' >>feeds.conf.default
 
+# istroe
+
 # 主题
 git clone --depth=1 -b openwrt-25.12 https://github.com/sbwml/luci-theme-argon.git package/argon
 git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora.git package/luci-theme-aurora
