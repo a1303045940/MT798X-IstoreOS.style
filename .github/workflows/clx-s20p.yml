@@ -88,6 +88,11 @@ jobs:
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
+    - name: Update istore feeds
+      run: cd openwrt && ./scripts/feeds install -a -p nas
+      run: cd openwrt && ./scripts/feeds install -a -p nas_luci
+      run: cd openwrt && ./scripts/feeds install -a -p istore
+
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
