@@ -13,8 +13,12 @@
 # istoreos商店插件
 echo >> feeds.conf.default
 echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
-./scripts/feeds update istore
-./scripts/feeds install -d y -p istore luci-app-store
+echo 'src-git nas https://github.com/linkease/nas-packages.git;master' >> feeds.conf.default
+echo 'src-git nas_luci https://github.com/linkease/nas-packages-luci.git;main' >> feeds.conf.default
+./scripts/feeds update istore nas nas_luci
+./scripts/feeds install -a -p nas
+./scripts/feeds install -a -p nas_luci
+./scripts/feeds install -a -p istore
 
 # 自定义默认网关，后方的192.168.61.1即是可自定义的部分
 sed -i 's/192.168.6.1/192.168.30.1/g' package/base-files/files/bin/config_generate
