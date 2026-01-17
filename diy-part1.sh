@@ -29,4 +29,4 @@ git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config.git packag
 git clone --depth=1 https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
 git clone --depth=1 -b master https://github.com/sirpdboy/luci-app-kucat-config.git package/luci-app-kucat-config
 
-git clone --depth=1 -b master https://github.com/EasyTier/luci-app-easytier.git package/luci-app-easytier
+git clone --depth=1 https://github.com/EasyTier/luci-app-easytier.git package/luci-app-easytier
