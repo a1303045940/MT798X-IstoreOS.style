@@ -23,6 +23,9 @@ echo 'src-git nikki https://github.com/nikkinikki-org/OpenWrt-nikki.git' >> feed
 echo 'src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall.git;main' >> feeds.conf.default
 echo 'src-git passwall2 https://github.com/Openwrt-Passwall/openwrt-passwall2.git;main' >> feeds.conf.default
 echo 'src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main' >> feeds.conf.default
+# 插件添加
+echo 'src-git authshield https://github.com/iv7777/luci-app-authshield.git;main' >> feeds.conf.default
+
 # 主题
 # git clone --depth=1 -b openwrt-25.12 https://github.com/sbwml/luci-theme-argon.git package/argon
 git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora.git package/luci-theme-aurora
