@@ -13,9 +13,10 @@
      默认地址：192.168.30.1  密码：无，直接回车。
 
 237大佬源码网址: https://github.com/padavanonly/immortalwrt-mt798x-24.10
+
 dailook大佬源码网址: https://github.com/dailook/immortalwrt-mt798x-24.10
 
-因为quickstart的首页温度无法显示正常温度读书，原因为：/cgi-bin/luci/istore/system/status/ 这个请求没有 cpuTemperature 这个返回值，这个请求是 /usr/lib/lua/luci/controller/istore_backend.lua 在处理的，但 lua 里只是转给了 quickstart 监听的端口，核心问题是 istoreos 的 quickstart 不支持这个架构的 CPU 温度获取所以没有输出。使用了地址为：https://gist.github.com/puteulanus/1c180fae6bccd25e57eb6d30b7aa28aa 提供的修复文件：istore_backend.lua。感谢作者的分享。
+因为quickstart的首页温度无法显示正常温度读数，原因为/cgi-bin/luci/istore/system/status/ 这个请求没有 cpuTemperature 这个返回值，这个请求是 /usr/lib/lua/luci/controller/istore_backend.lua 在处理的，但 lua 里只是转给了 quickstart 监听的端口，所以核心问题是 istoreos 的 quickstart 不支持这个架构的 CPU 温度获取所以没有输出。使用了地址为：https://gist.github.com/puteulanus/1c180fae6bccd25e57eb6d30b7aa28aa 提供的修复文件：istore_backend.lua。感谢作者的分享。
 
 使用p3terx云编译模板
 
