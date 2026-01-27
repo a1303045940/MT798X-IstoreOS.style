@@ -24,13 +24,12 @@ echo 'src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall.git;
 echo 'src-git passwall2 https://github.com/Openwrt-Passwall/openwrt-passwall2.git;main' >> feeds.conf.default
 echo 'src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main' >> feeds.conf.default
 # 插件添加
-echo 'src-git authshield https://github.com/iv7777/luci-app-authshield.git;main' >> feeds.conf.default
-echo 'src-git easytier https://github.com/EasyTier/luci-app-easytier.git;main' >> feeds.conf.default
-echo 'src-git tailscale-community https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community.git;main' >> feeds.conf.default
-# echo 'src-git watchdog https://github.com/sirpdboy/luci-app-watchdog.git;main' >> feeds.conf.default
 git clone https://github.com/sirpdboy/luci-app-watchdog package/watchdog
+git clone https://github.com/iv7777/luci-app-authshield package/authshield
+git clone https://github.com/EasyTier/luci-app-easytier package/easytier
+git clone https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community package/tailscale
 # 主题
-# git clone --depth=1 -b openwrt-24.10 https://github.com/sbwml/luci-theme-argon.git package/argon
+git clone --depth=1 -b openwrt-24.10 https://github.com/sbwml/luci-theme-argon.git package/argon
 git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora.git package/luci-theme-aurora
 git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config.git package/luci-app-aurora-config
 git clone --depth=1 https://github.com/sirpdboy/luci-theme-kucat.git package/luci-theme-kucat
