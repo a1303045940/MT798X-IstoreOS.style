@@ -9,6 +9,7 @@
 # This is free software, licensed under the MIT License.
 # See /LICENSE for more information.
 #
+
 # istore
 git clone --depth=1 https://github.com/linkease/istore  package/istore
 git clone --depth=1 https://github.com/linkease/nas-packages  package/nas
@@ -31,7 +32,7 @@ git clone --depth=1 https://github.com/iv7777/luci-app-authshield  package/auths
 git clone --depth=1 https://github.com/EasyTier/luci-app-easytier  package/easytier
 git clone --depth=1 https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community  package/tailscale
 
-# 主题（优化路径）
+# 主题
 git clone --depth=1 -b openwrt-24.10 https://github.com/sbwml/luci-theme-argon.git  package/argon
 git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora.git  package/aurora  
 git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config.git  package/aurora-config
