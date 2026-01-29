@@ -31,27 +31,29 @@ rm -rf temp_packages
 echo "Rust has been replaced with stable version 1.85.0!"
 
 # =========================================================
-# 修复 QuickStart 首页温度显示问题 (方案：修改源码)
+# 智能修复脚本（兼容 package/ 和 feeds/）
 # =========================================================
 
-# 1. 智能获取自定义文件的绝对路径
-# $0 代表当前脚本本身，dirname 获取脚本所在目录(即仓库根目录)
 REPO_ROOT=$(dirname "$(readlink -f "$0")")
 CUSTOM_LUA="$REPO_ROOT/istore/istore_backend.lua"
 
 echo "Debug: Repo root is $REPO_ROOT"
-echo "Debug: Looking for custom file at $CUSTOM_LUA"
 
-# 2. 在 feeds 目录中查找目标文件
-TARGET_LUA=$(find feeds -name "istore_backend.lua" -type f)
+# 1. 优先查找 package 目录
+TARGET_LUA=$(find package -name "istore_backend.lua" -type f 2>/dev/null)
 
+# 2. 如果 package 中没找到，再查找 feeds
+if [ -z "$TARGET_LUA" ]; then
+    echo "Not found in package/, searching in feeds/..."
+    TARGET_LUA=$(find feeds -name "istore_backend.lua" -type f 2>/dev/null)
+fi
+
+# 3. 执行覆盖（逻辑与原脚本相同）
 if [ -n "$TARGET_LUA" ]; then
     echo "Found target file: $TARGET_LUA"
     if [ -f "$CUSTOM_LUA" ]; then
         echo "Overwriting with custom file..."
         cp -f "$CUSTOM_LUA" "$TARGET_LUA"
-        
-        # 再次检查是否覆盖成功
         if cmp -s "$CUSTOM_LUA" "$TARGET_LUA"; then
              echo "✅ Overwrite Success! Files match."
         else
@@ -59,11 +61,10 @@ if [ -n "$TARGET_LUA" ]; then
         fi
     else
         echo "❌ Error: Custom file ($CUSTOM_LUA) not found!"
-        # 列出仓库根目录看看有什么，方便排错
-        ls -l "$REPO_ROOT"
+        ls -l "$REPO_ROOT/istore" 2>/dev/null || echo "Directory not found"
     fi
 else
-    echo "❌ Error: Target istore_backend.lua not found in feeds!"
+    echo "❌ Error: istore_backend.lua not found in package/ or feeds/!"
 fi
 
 #修复DiskMan编译失败
