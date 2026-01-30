@@ -21,14 +21,7 @@ env:
   TZ: Asia/Shanghai
 
 on:
-  # 如果你想恢复自动编译，把下面被注释的 push 部分解开即可
-  # push:
-  #   branches:
-  #     - main
-  #   paths-ignore:
-  #     - '.github/workflows/**'
-  
-  # 目前仅保留手动触发，避免一改代码就跑
+  repository_dispatch:
   workflow_dispatch:
     inputs:
       ssh:
@@ -43,219 +36,176 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-    # 1. 清理磁盘空间
-    - name: Free Disk Space (清理磁盘空间)
-      uses: jlumbroso/free-disk-space@main
-      with:
-        tool-cache: true
-        android: true
-        dotnet: true
-        haskell: true
-        large-packages: true
-        docker-images: true
-        swap-storage: true
-        
-    # 2. 初始化编译环境
-    - name: Initialization Environment (初始化编译环境)
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        sudo -E apt -yqq purge firefox
-        sudo -E apt -yqq update
-        sudo -E apt -yqq full-upgrade
-        sudo -E apt -yqq autoremove --purge
-        sudo -E apt -yqq clean
-        sudo -E timedatectl set-timezone "$TZ"
-        
-        sudo apt -yqq install dos2unix libfuse-dev
-        sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
-        
-        sudo mkdir -p /workdir
-        sudo chown $USER:$GROUPS /workdir
+      # 1. 清理磁盘空间
+      - name: Free Disk Space (清理磁盘空间)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
 
-    # 3. 克隆源码
-    - name: Clone source code (克隆源码)
-      working-directory: /workdir
-      run: |
-        df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH --single-branch openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+      # 2. 初始化编译环境
+      - name: Initialization Environment (初始化编译环境)
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo -E apt -yqq purge firefox
+          sudo -E apt -yqq update
+          sudo -E apt -yqq full-upgrade
+          sudo -E apt -yqq autoremove --purge
+          sudo -E apt -yqq clean
+          sudo -E timedatectl set-timezone "$TZ"
+          sudo apt -yqq install dos2unix libfuse-dev
+          sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+          sudo mkdir -p /workdir
+          sudo chown $USER:$GROUPS /workdir
 
-    # 4. 加载自定义 Feeds (diy-part1.sh)
-    - name: Load custom feeds (加载自定义 Feeds)
-      run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x $DIY_P1_SH
-        cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
+      # 3. 克隆源码
+      - name: Clone source code (克隆源码)
+        working-directory: /workdir
+        run: |
+          df -hT $PWD
+          git clone $REPO_URL -b $REPO_BRANCH --single-branch openwrt
+          ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
-    # 5. 更新并安装 Feeds
-    - name: Update feeds (Feeds更新)
-      run: cd openwrt && ./scripts/feeds update -a
+      # 4. 加载自定义 Feeds (diy-part1.sh)
+      - name: Load custom feeds (加载自定义 Feeds)
+        run: |
+          [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+          chmod +x $DIY_P1_SH
+          cd openwrt
+          $GITHUB_WORKSPACE/$DIY_P1_SH
 
-    - name: Install feeds (Feeds安装)
-      run: cd openwrt && ./scripts/feeds install -a
+      # 5. 更新并安装 Feeds
+      - name: Update feeds (Feeds更新)
+        run: cd openwrt && ./scripts/feeds update -a
 
-    # 6. 加载自定义配置 (diy-part2.sh)
-    - name: Load custom configuration (加载自定义配置diy-part2)
-      run: |
-        [ -e files ] && mv files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_P2_SH
-        cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
+      - name: Install feeds (Feeds安装)
+        run: cd openwrt && ./scripts/feeds install -a
 
-    # 7. SSH 调试 (可选)
-    - name: SSH connection to Actions (SSH 调试)
-      uses: mxschmitt/action-tmate@v3
-      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh != 'false') || contains(github.event.action, 'ssh')
+      # 6. 加载自定义配置 (diy-part2.sh)
+      - name: Load custom configuration (加载自定义配置diy-part2)
+        run: |
+          [ -e files ] && mv files openwrt/files
+          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+          chmod +x $DIY_P2_SH
+          cd openwrt
+          $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    # 8. 下载软件包 (预下载以防编译时网络中断)
-    - name: Download package (下载软件包)
-      id: package
-      run: |
-        cd openwrt
-        make defconfig
-        make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
+      # 7. SSH 调试 (可选)
+      - name: SSH connection to Actions (SSH 调试)
+        uses: mxschmitt/action-tmate@v3
+        if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh != 'false') || contains(github.event.action, 'ssh')
 
-    # 9. 包含重试逻辑：先多核编译，失败后单核编译并输出详细日志
-    - name: Compile the firmware (编译固件)
-      id: compile
-      run: |
-        cd openwrt
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
-        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+      # 8. 下载软件包 (预下载以防编译时网络中断)
+      - name: Download package (下载软件包)
+        id: package
+        run: |
+          cd openwrt
+          make defconfig
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
 
-    - name: Check space usage (编译后容量确认)
-      if: (!cancelled())
-      run: df -hT
+      # 9. 包含重试逻辑：先多核编译，失败后单核编译并输出详细日志
+      - name: Compile the firmware (编译固件)
+        id: compile
+        run: |
+          cd openwrt
+          echo -e "$(nproc) thread compile"
+          make -j$(nproc) || make -j1 || make -j1 V=s
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
-    # 10. 上传 bin 目录 (Artifacts)
-    - name: Upload bin directory (上传 bin 目录)
-      uses: actions/upload-artifact@main
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: OpenWrt_bin_${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: openwrt/bin
+      - name: Check space usage (编译后容量确认)
+        if: (!cancelled())
+        run: df -hT
 
-    # 11. 整理固件文件
-    - name: Organize files (整理固件文件)
-      id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-      run: |
-        cd openwrt/bin/targets/*/*
-        rm -rf packages
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
+      # 10. 上传 bin 目录 (Artifacts)
+      - name: Upload bin directory (上传 bin 目录)
+        uses: actions/upload-artifact@main
+        if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+        with:
+          name: OpenWrt_bin_${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          path: openwrt/bin
 
-    # 12. 上传固件目录 (Artifacts)
-    - name: Upload OpenWrt_firmware directory (上传固件目录)
-      uses: actions/upload-artifact@v4
-      if: steps.organize.outputs.status == 'success' && !cancelled()
-      with:
-        name: OpenWrt_firmware_${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE }}
+      # 11. 整理固件文件
+      - name: Organize files (整理固件文件)
+        id: organize
+        if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+        run: |
+          cd openwrt/bin/targets/*/*
+          rm -rf packages
+          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
 
-    # 13. 上传到 CowTransfer (可选)
-    - name: Upload firmware to cowtransfer
-      id: cowtransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
-        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
-        echo "url=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
+      # 12. 上传固件目录 (Artifacts)
+      - name: Upload OpenWrt_firmware directory (上传固件目录)
+        uses: actions/upload-artifact@v4
+        if: steps.organize.outputs.status == 'success' && !cancelled()
+        with:
+          name: OpenWrt_firmware_${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          path: ${{ env.FIRMWARE }}
 
-    # 14. 上传到 WeTransfer (可选)
-    - name: Upload firmware to WeTransfer
-      id: wetransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
-        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
-        echo "url=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_OUTPUT
-
-    # 15. 生成发布标签和日志
-    - name: Generate release tag (生成发布标签和日志)
-      id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      run: |
-        # 提取作者名
-        AUTHOR=$(echo "${{ env.REPO_URL }}" | cut -d'/' -f4)
-        DEVICE_NAME="${{ env.DEVICE_NAME }}"
-        BRANCH="${{ env.REPO_BRANCH }}"
-        BUILD_TIME=$(date +"%Y%m%d-%H%M")
-        
-        # 生成唯一 Tag: 机型-作者-分支-时间
-        RELEASE_TAG="${DEVICE_NAME}-${AUTHOR}-${BRANCH}-${BUILD_TIME}"
-        RELEASE_TAG=$(echo "$RELEASE_TAG" | sed 's/[^a-zA-Z0-9._-]/-/g')
-        
-        echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
-        
-        # 生成 Release 说明文件
-        touch release.txt
-        echo "## 🚀 OpenWrt 自动编译固件" >> release.txt
-        echo "" >> release.txt
-        echo "### 📋 编译信息" >> release.txt
-        echo "| 项目 | 详情 |" >> release.txt
-        echo "|------|------|" >> release.txt
-        echo "| 📱 设备名称 | \`${DEVICE_NAME}\` |" >> release.txt
-        echo "| 👤 源码作者 | \`${AUTHOR}\` |" >> release.txt
-        echo "| 🔗 源码仓库 | ${{ env.REPO_URL }} |" >> release.txt
-        echo "| 🌿 分支版本 | \`${BRANCH}\` |" >> release.txt
-        echo "| ⏰ 编译时间 | $(date '+%Y-%m-%d %H:%M:%S') (Shanghai) |" >> release.txt
-        echo "| 🏷️ 版本标签 | \`${RELEASE_TAG}\` |" >> release.txt
-        echo "" >> release.txt
-        
-        if [ "${{ env.UPLOAD_COWTRANSFER }}" = "true" ] && [ -n "${{ steps.cowtransfer.outputs.url }}" ]; then
-          echo "🔗 **Cowtransfer**: [点击下载](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+      # 13. 生成发布标签和日志
+      - name: Generate release tag (生成发布标签和日志)
+        id: tag
+        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        run: |
+          AUTHOR=$(echo "${{ env.REPO_URL }}" | cut -d'/' -f4)
+          DEVICE_NAME="${{ env.DEVICE_NAME }}"
+          BRANCH="${{ env.REPO_BRANCH }}"
+          BUILD_TIME=$(date +"%Y%m%d-%H%M")
+          RELEASE_TAG="${DEVICE_NAME}-${AUTHOR}-${BRANCH}-${BUILD_TIME}"
+          RELEASE_TAG=$(echo "$RELEASE_TAG" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
+          touch release.txt
+          echo "## 🚀 OpenWrt 自动编译固件" >> release.txt
           echo "" >> release.txt
-        fi
-        
-        if [ "${{ env.UPLOAD_WETRANSFER }}" = "true" ] && [ -n "${{ steps.wetransfer.outputs.url }}" ]; then
-          echo "🔗 **WeTransfer**: [点击下载](${{ steps.wetransfer.outputs.url }})" >> release.txt
-          echo "" >> release.txt
-        fi
-        
-        echo "---" >> release.txt
-        echo "> ⚠️ **注意**: 请根据自己的机型选择对应的 Factory 或 Sysupgrade 固件" >> release.txt
-        
-        echo "status=success" >> $GITHUB_OUTPUT
+          echo "### 📋 编译信息" >> release.txt
+          echo "| 项目 | 详情 |" >> release.txt
+          echo "|------|------|" >> release.txt
+          echo "| 📱 设备名称 | \`${DEVICE_NAME}\` |" >> release.txt
+          echo "| 👤 源码作者 | \`${AUTHOR}\` |" >> release.txt
+          echo "| 🔗 源码仓库 | ${{ env.REPO_URL }} |" >> release.txt
+          echo "| 🌿 分支版本 | \`${BRANCH}\` |" >> release.txt
+          echo "| ⏰ 编译时间 | $(date '+%Y-%m-%d %H:%M:%S') (Shanghai) |" >> release.txt
+          echo "| 🏷️ 版本标签 | \`${RELEASE_TAG}\` |" >> release.txt
+          echo "status=success" >> $GITHUB_OUTPUT
 
-    # 16. 发布到 GitHub Release
-    - name: Upload firmware to release (发布到 GitHub Release)
-      uses: softprops/action-gh-release@v2
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.tag.outputs.release_tag }}
-        body_path: release.txt
-        files: |
-          ${{ env.FIRMWARE }}/*.bin
-          ${{ env.FIRMWARE }}/*.ipk
-          ${{ env.FIRMWARE }}/*.img.gz
-          ${{ env.FIRMWARE }}/*.manifest
-          ${{ env.FIRMWARE }}/*.tar.gz
+      # 14. 发布到 GitHub Release
+      - name: Upload firmware to release (发布到 GitHub Release)
+        uses: softprops/action-gh-release@v2
+        if: steps.tag.outputs.status == 'success' && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          body_path: release.txt
+          files: |
+            ${{ env.FIRMWARE }}/*.bin
+            ${{ env.FIRMWARE }}/*.ipk
+            ${{ env.FIRMWARE }}/*.img.gz
+            ${{ env.FIRMWARE }}/*.manifest
+            ${{ env.FIRMWARE }}/*.tar.gz
 
-    # 17. 清理旧的工作流记录
-    - name: Delete workflow runs (清理旧的工作流记录)
-      uses: GitRML/delete-workflow-runs@main
-      with:
-        retain_days: 1
-        keep_minimum_runs: 10
+      # 15. 清理旧的工作流记录
+      - name: Delete workflow runs (清理旧的工作流记录)
+        uses: GitRML/delete-workflow-runs@main
+        with:
+          retain_days: 1
+          keep_minimum_runs: 10
 
-    # 18. 清理旧的 Release 发布
-    - name: Remove old Releases (清理旧的 Release 发布)
-      uses: dev-drprasad/delete-older-releases@v0.2.1
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 10
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 16. 清理旧的 Release 发布
+      - name: Remove old Releases (清理旧的 Release 发布)
+        uses: dev-drprasad/delete-older-releases@v0.2.1
+        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        with:
+          keep_latest: 10
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
