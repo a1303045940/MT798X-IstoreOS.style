@@ -146,7 +146,7 @@ jobs:
 
     # 10. 上传 bin 目录 (Artifacts)
     - name: Upload bin directory (上传 bin 目录)
-      uses: actions/upload-artifact@v4  # 固定版本
+      uses: actions/upload-artifact@main  # 固定版本
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
         name: OpenWrt_bin_${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
