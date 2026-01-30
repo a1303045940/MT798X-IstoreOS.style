@@ -11,6 +11,7 @@
 name: mt7986-clx-s20p
 
 env:
+  DEVICE_NAME: clx-s20p
   #REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
   REPO_URL: https://github.com/dailook/immortalwrt-mt798x-6.6
   #REPO_URL: https://github.com/sagehou/immortalwrt-mt798x-6.6
@@ -192,7 +193,7 @@ jobs:
         
         # 2. 设备名称（使用 job id，确保你的 job id 是 mt7986-clx-s20p）
         # 如果担心不一致，建议在 env 中添加 DEVICE_NAME: mt7986-clx-s20p，然后改成 ${{ env.DEVICE_NAME }}
-        DEVICE_NAME="${{ github.job }}"
+        DEVICE_NAME=${{ env.DEVICE_NAME }}
         
         # 3. 分支名称 (openwrt-24.10-6.6)
         BRANCH="${{ env.REPO_BRANCH }}"
