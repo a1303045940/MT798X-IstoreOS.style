@@ -29,6 +29,7 @@ cp -r temp_packages/lang/rust feeds/packages/lang/
 rm -rf temp_packages
 
 echo "Rust has been replaced with stable version 1.85.0!"
+# 目前还可以解决编译失败的问题，但是编译时间会相比正常编译慢大概一个小时
 
 # =========================================================
 # 智能修复脚本（兼容 package/ 和 feeds/）
