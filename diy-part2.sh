@@ -107,14 +107,13 @@ else
     echo "❌ Error: istore_backend.lua not found in package/ or feeds/!"
 fi
 
-#修复DiskMan编译失败
-DM_FILE="./luci-app-diskman/applications/luci-app-diskman/Makefile"
-if [ -f "$DM_FILE" ]; then
-	echo " "
+echo ">>> Patching DiskMan and libxcrypt..."
 
-	sed -i '/ntfs-3g-utils /d' $DM_FILE
-
-	cd $PKG_PATH && echo "diskman has been fixed!"
+#  DiskMan 修复
+DM_MAKEFILE=$(find feeds/luci -name "Makefile" | grep "luci-app-diskman")
+if [ -f "$DM_MAKEFILE" ]; then
+    sed -i '/ntfs-3g-utils /d' "$DM_MAKEFILE"
+    echo "✅ DiskMan fix applied."
 fi
 
 # 修复 libxcrypt 编译报错
