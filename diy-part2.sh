@@ -14,7 +14,12 @@ echo "=========================================="
 echo " 修复 Rust
 echo "=========================================="
 
-# 拉取官方 Makefile 提取版本信息
+#!/bin/bash
+# DIY Part 2 - 使用国内镜像下载 Rust
+
+cd openwrt
+
+# 获取 ImmortalWrt 版本和哈希
 curl -fsSL \
   https://raw.githubusercontent.com/immortalwrt/packages/openwrt-24.10/lang/rust/Makefile \
   -o /tmp/rust-imm.mk
@@ -22,44 +27,53 @@ curl -fsSL \
 VER=$(grep '^PKG_VERSION:=' /tmp/rust-imm.mk | cut -d'=' -f2 | tr -d ' ')
 HASH=$(grep '^PKG_HASH:=' /tmp/rust-imm.mk | cut -d'=' -f2 | tr -d ' ')
 
-echo "目标版本: $VER"
-echo "目标哈希: $HASH"
+echo "需要下载 Rust $VER，哈希 $HASH"
 
-# 同时更新本地 Makefile（确保版本一致）
+# 更新本地 Makefile
 sed -i "s/^PKG_VERSION:=.*/PKG_VERSION:=$VER/" feeds/packages/lang/rust/Makefile
 sed -i "s/^PKG_HASH:=.*/PKG_HASH:=$HASH/" feeds/packages/lang/rust/Makefile
 
-# 清理旧的 Rust 包（如果有）
-echo ">>> 清理旧版本 Rust 包..."
-rm -f dl/rustc-1.*-src.tar.xz* 2>/dev/null || true
+# 清理旧文件
+rm -f dl/rustc-1.*-src.tar.xz*
 
-# 预下载目标版本
+# 🔥 关键：尝试多个镜像源
 RUST_FILE="rustc-${VER}-src.tar.xz"
-RUST_URL="https://static.rust-lang.org/dist/${RUST_FILE}"
+SUCCESS=0
 
-echo ">>> 下载 Rust $VER..."
-wget -q --show-progress -O "dl/${RUST_FILE}" "$RUST_URL" || \
-curl -fSL -o "dl/${RUST_FILE}" "$RUST_URL"
+# 镜像源列表（按速度排序）
+MIRRORS=(
+  "https://mirrors.ustc.edu.cn/rust-static/dist/${RUST_FILE}"      # 中科大
+  "https://mirrors.tuna.tsinghua.edu.cn/rustup/dist/${RUST_FILE}"  # 清华
+  "https://mirrors.cloud.tencent.com/rust-static/dist/${RUST_FILE}" # 腾讯
+  "https://static.rust-lang.org/dist/${RUST_FILE}"                  # 官方
+)
 
-# 验证哈希
-echo ">>> 验证文件完整性..."
-DL_HASH=$(sha256sum "dl/${RUST_FILE}" | cut -d' ' -f1)
+for MIRROR in "${MIRRORS[@]}"; do
+  echo "尝试下载: $MIRROR"
+  if wget --timeout=60 --tries=2 -O "dl/${RUST_FILE}.tmp" "$MIRROR" 2>/dev/null; then
+    # 验证哈希
+    DL_HASH=$(sha256sum "dl/${RUST_FILE}.tmp" | cut -d' ' -f1)
+    if [ "$DL_HASH" = "$HASH" ]; then
+      mv "dl/${RUST_FILE}.tmp" "dl/${RUST_FILE}"
+      echo "✅ 下载成功: $MIRROR"
+      SUCCESS=1
+      break
+    else
+      echo "❌ 哈希不匹配，尝试下一个镜像"
+      rm -f "dl/${RUST_FILE}.tmp"
+    fi
+  else
+    echo "❌ 下载失败，尝试下一个镜像"
+  fi
+done
 
-if [ "$DL_HASH" != "$HASH" ]; then
-    echo "❌ 哈希不匹配！"
-    echo "期望: $HASH"
-    echo "实际: $DL_HASH"
-    rm -f "dl/${RUST_FILE}"
-    exit 1
+if [ "$SUCCESS" -ne 1 ]; then
+  echo "所有镜像源都失败"
+  exit 1
 fi
 
-echo "✅ Rust $VER 已就绪: dl/${RUST_FILE}"
-
-# 清理临时文件
 rm -f /tmp/rust-imm.mk
-
-echo ">>> Rust 准备完成"
-
+echo "Rust $VER 准备完成"
 echo "=========================================="
 echo "Rust 修复完成"
 echo "=========================================="
