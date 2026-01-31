@@ -10,11 +10,10 @@
 # See /LICENSE for more information.
 #
 
-#!/bin/bash
+
 #
 # DIY Part 2 - 修复Rust版本并预下载
 #
-
 set -e
 
 echo "=========================================="
